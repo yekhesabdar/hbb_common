@@ -85,7 +85,7 @@ lazy_static::lazy_static! {
 pub const LINK_DOCS_HOME: &str = "https://hesabdesk.com/docs/en/";
 pub const LINK_DOCS_X11_REQUIRED: &str = "https://hesabdesk.com/docs/en/manual/linux/#x11-required";
 pub const LINK_HEADLESS_LINUX_SUPPORT: &str =
-    "https://github.com/hesabdesk/hesabdesk/wiki/Headless-Linux-Support";
+    "https://github.com/rustdesk/rustdesk/wiki/Headless-Linux-Support";
 
 lazy_static::lazy_static! {
     pub static ref HELPER_URL: HashMap<&'static str, &'static str> = HashMap::from([
