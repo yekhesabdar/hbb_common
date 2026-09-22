@@ -1,6 +1,15 @@
 syntax = "proto3";
 package hbb;
 
+message IdPk {
+  string id = 1;
+  bytes pk = 2;
+  // DTLS certificate fingerprint of the signer's WebRTC endpoint, signed together with id/pk so
+  // a WebRTC peer's DTLS channel can be bound to its verified identity (defeats a rendezvous/relay
+  // that swaps SDP fingerprints). Empty for non-WebRTC handshakes.
+  string dtls_fingerprint = 3;
+}
+
 message RegisterPeer {
   string id = 1;
   int32 serial = 2;
@@ -28,6 +37,11 @@ message PunchHoleRequest {
   bool force_relay = 8;
   int32 upnp_port = 9;
   bytes socket_addr_v6 = 10;
+  string switch_code = 11;
+  // The offer's envelope declares its own ICE transport policy (`ice_policy` key inside
+  // the webrtc:// payload): under force_relay it tells the peer whether the relay is
+  // transport-forced (WebSocket — answer may use full ICE) or policy (Relay-only + TURN).
+  string webrtc_sdp_offer = 12;
 }
 
 message ControlPermissions {
@@ -44,8 +58,13 @@ message ControlPermissions {
     recording = 9;
     block_input = 10;
     remote_modify = 11;
+    privacy_mode = 12;
   }
   uint64 permissions = 1;
+}
+
+message ControlledContext {
+  string conn_audit_ref = 1;
 }
 
 message PunchHole {
@@ -57,6 +76,8 @@ message PunchHole {
   int32 upnp_port = 6;
   bytes socket_addr_v6 = 7;
   ControlPermissions control_permissions = 8;
+  ControlledContext controlled_context = 9;
+  string webrtc_sdp_offer = 10;
 }
 
 message TestNatRequest {
@@ -83,6 +104,7 @@ message PunchHoleSent {
   string version = 5;
   int32 upnp_port = 6;
   bytes socket_addr_v6 = 7;
+  string webrtc_sdp_answer = 8;
 }
 
 message RegisterPk {
@@ -102,6 +124,7 @@ message RegisterPkResponse {
     INVALID_ID_FORMAT = 5;
     NOT_SUPPORT = 6;
     SERVER_ERROR = 7;
+    NOT_DEPLOYED = 8;
   }
   Result result = 1;
   int32 keep_alive = 2;
@@ -127,6 +150,7 @@ message PunchHoleResponse {
   bool is_udp = 9;
   int32 upnp_port = 10;
   bytes socket_addr_v6 = 11;
+  string webrtc_sdp_answer = 12;
 }
 
 message ConfigUpdate {
@@ -144,6 +168,8 @@ message RequestRelay {
   ConnType conn_type = 7;
   string token = 8;
   ControlPermissions control_permissions = 9;
+  ControlledContext controlled_context = 10;
+  string switch_code = 11;
 }
 
 message RelayResponse {
@@ -159,6 +185,7 @@ message RelayResponse {
   int32 feedback = 9;
   bytes socket_addr_v6 = 10;
   int32 upnp_port = 11;
+  string webrtc_sdp_answer = 12;
 }
 
 message SoftwareUpdate { string url = 1; }
@@ -172,6 +199,7 @@ message FetchLocalAddr {
   string relay_server = 2;
   bytes socket_addr_v6 = 3;
   ControlPermissions control_permissions = 4;
+  ControlledContext controlled_context = 5;
 }
 
 message LocalAddr {
@@ -210,6 +238,32 @@ message HealthCheck {
   string token = 1;
 }
 
+message HeaderEntry {
+  string name = 1;
+  string value = 2;
+}
+
+message HttpProxyRequest {
+  string method = 1;
+  string path = 2;
+  repeated HeaderEntry headers = 3;
+  bytes body = 4;
+}
+
+message HttpProxyResponse {
+  int32 status = 1;
+  repeated HeaderEntry headers = 2;
+  bytes body = 3;
+  string error = 4;
+}
+
+message IceCandidate {
+  string id = 1;
+  bytes socket_addr = 2;
+  string session_key = 3;
+  string candidate = 4;
+}
+
 message RendezvousMessage {
   oneof union {
     RegisterPeer register_peer = 6;
@@ -233,5 +287,8 @@ message RendezvousMessage {
     OnlineResponse online_response = 24;
     KeyExchange key_exchange = 25;
     HealthCheck hc = 26;
+    HttpProxyRequest http_proxy_request = 27;
+    HttpProxyResponse http_proxy_response = 28;
+    IceCandidate ice_candidate = 29;
   }
 }
